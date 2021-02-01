@@ -1,6 +1,4 @@
 #include <iostream>
-#include <Windows.h>
-#include <SDL_syswm.h>
 
 #include "circle.h"
 
@@ -54,15 +52,18 @@ int main(int argc, char* argv[])
     main_env.global_force = { 0.0f, 1000.0f };
 
     SDL_Color circleCol = { 255, 255, 255 };
-    //float circleRad = 50.0f;
+    float circleRad = 40.0f;
 
     std::vector<PhysicsCircle*> circleVec;
-    //circleVec.push_back(new PhysicsCircle{ {0, 0}, {0,0}, 150.0f, 0, 1, false, main_env, SDL_Color {255, 0, 0} });
+    circleVec.push_back(new PhysicsCircle{ {0, 0}, {0,0}, 150.0f, 0, 1, false, main_env, SDL_Color {255, 0, 0} });
 
-    for (int _ = 0; _ < 500; _++)
+    for (float x = 2.0f * circleRad; x < 500.0f; x+=2.0f * circleRad)
     {
-        PhysicsCircle* cPtr = new PhysicsCircle({ (float)(rand() % (WINWT - 10) + 10), (float)(rand() % (WINHT - 10) + 10) }, { 1000, 1000 }, 10, 0.5, 1, true, main_env, circleCol);
-        circleVec.push_back(cPtr);
+        for (float y = 2.0f * circleRad; y < 500.0f; y += 2.0f * circleRad)
+        {
+            PhysicsCircle* cPtr = new PhysicsCircle({ x, y }, { x, x }, circleRad, 0.2, 1, true, main_env, circleCol);
+            circleVec.push_back(cPtr);
+        }
     }
 
     CircleEngine engine(circleVec);
@@ -71,6 +72,7 @@ int main(int argc, char* argv[])
     float deltaTime = 0.0f;
 
     int mouseX, mouseY, lastMouseX = 0, lastMouseY = 0;
+    bool runSim = false;
 
     while (!quit)
     {
@@ -89,16 +91,21 @@ int main(int argc, char* argv[])
                 case SDLK_ESCAPE:
                     quit = true;
                     break;
+
+                case SDLK_SPACE:
+                    runSim = true;
+                    break;
                 }
+
 
                 break;
             }
         }
 
-       /*
+       
         SDL_GetMouseState(&mouseX, &mouseY);
 
-        
+        // Instanteneous velocity calculations
         engine.m_circles[0]->m_vel.x = (mouseX - lastMouseX) / deltaTime;
         engine.m_circles[0]->m_vel.y = (mouseY - lastMouseY) / deltaTime;
 
@@ -107,11 +114,14 @@ int main(int argc, char* argv[])
 
         lastMouseX = mouseX;
         lastMouseY = mouseY;
-        */
+        
         
         //std::cout << engine.m_circles[1]->m_pos.x << ' ' << engine.m_circles[1]->m_pos.y << std::endl;
 
-        engine.phys_update(deltaTime);
+        if (runSim)
+        {
+            engine.phys_update(deltaTime);
+        }
    
         SDL_SetRenderDrawColor(hRend, 0, 0, 0, 255);
         SDL_RenderClear(hRend);

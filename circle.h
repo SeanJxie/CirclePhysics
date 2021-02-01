@@ -12,7 +12,7 @@ A 2D circles physics engine inspired by javidx9's tutorial: https://www.youtube.
 */
 
 
-const int CIRCLE_RESOLUTION = 5;
+const int CIRCLE_RESOLUTION = 20;
 const float MIN_VELOCITY = 0.0f; // Uh... I'll use this soon
 
 
