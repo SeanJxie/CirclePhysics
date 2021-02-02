@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "circle.h"
+#include "circle_physics.h"
 
 
 const char* WINTT = "Circles";
@@ -55,14 +55,19 @@ int main(int argc, char* argv[])
     float circleRad = 40.0f;
 
     std::vector<PhysicsCircle*> circleVec;
-    circleVec.push_back(new PhysicsCircle{ {0, 0}, {0,0}, 150.0f, 0, 1, false, main_env, SDL_Color {255, 0, 0} });
 
-    for (float x = 2.0f * circleRad; x < 500.0f; x+=2.0f * circleRad)
+    // Init static objects
+    for (float x = 1000; x < 2000; x+=6)
     {
-        for (float y = 2.0f * circleRad; y < 500.0f; y += 2.0f * circleRad)
+        circleVec.push_back(new PhysicsCircle{ {x, 600}, {0, 0}, 3.0f, 0, 1, false, true, main_env, SDL_Color {255, 0, 0} });
+    }
+
+    // Init dynamic objects
+    for (float x = 2.0f * circleRad; x < 200.0f; x+=2.0f * circleRad)
+    {
+        for (float y = 2.0f * circleRad; y < 200.0f; y += 2.0f * circleRad)
         {
-            PhysicsCircle* cPtr = new PhysicsCircle({ x, y }, { x, x }, circleRad, 0.2, 1, true, main_env, circleCol);
-            circleVec.push_back(cPtr);
+            circleVec.push_back(new PhysicsCircle({ x, y }, { 1000.0f, 0.0f }, circleRad, 0.2f, 1, true, false, main_env, circleCol));
         }
     }
 
@@ -70,6 +75,7 @@ int main(int argc, char* argv[])
 
     Uint32 endTime, startTime = SDL_GetTicks();
     float deltaTime = 0.0f;
+    float timePassed = 0.0f;
 
     int mouseX, mouseY, lastMouseX = 0, lastMouseY = 0;
     bool runSim = false;
@@ -102,10 +108,10 @@ int main(int argc, char* argv[])
             }
         }
 
-       
-        SDL_GetMouseState(&mouseX, &mouseY);
 
+        /*
         // Instanteneous velocity calculations
+        SDL_GetMouseState(&mouseX, &mouseY);
         engine.m_circles[0]->m_vel.x = (mouseX - lastMouseX) / deltaTime;
         engine.m_circles[0]->m_vel.y = (mouseY - lastMouseY) / deltaTime;
 
@@ -114,6 +120,7 @@ int main(int argc, char* argv[])
 
         lastMouseX = mouseX;
         lastMouseY = mouseY;
+        */
         
         
         //std::cout << engine.m_circles[1]->m_pos.x << ' ' << engine.m_circles[1]->m_pos.y << std::endl;
@@ -121,6 +128,18 @@ int main(int argc, char* argv[])
         if (runSim)
         {
             engine.phys_update(deltaTime);
+            if (timePassed >= 1)
+            {
+                
+                engine.m_circles.push_back(new PhysicsCircle({ circleRad, circleRad }, { 20000.0f, 0.0f }, circleRad, 0.2f, 1, true, false, main_env, circleCol));
+                if (engine.m_circles.size() >= 100)
+                {
+                    engine.m_circles.erase(engine.m_circles.begin());
+                    timePassed = 0.0f;
+                }
+            }
+
+            timePassed += deltaTime;
         }
    
         SDL_SetRenderDrawColor(hRend, 0, 0, 0, 255);
@@ -133,7 +152,7 @@ int main(int argc, char* argv[])
         // Manage frame rate
         endTime = SDL_GetTicks();
 
-        deltaTime = (endTime - startTime) / 1000.0f;
+        deltaTime = (endTime - startTime) / 1000.0f; // Convert to seconds
         startTime = endTime;
       
 
