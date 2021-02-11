@@ -11,78 +11,96 @@ A 2D circles physics engine inspired by javidx9's tutorial: https://www.youtube.
 
 */
 
+#define MAX(A, B) ((A > B) ? A : B)
+#define MIN(A, B) ((A < B) ? A : B)
 
-const int CIRCLE_RESOLUTION = 20;
+
+const int CIRCLE_RESOLUTION = 10;
 const float MIN_VELOCITY = 0.0f; // Uh... I'll use this soon
 
 
-void draw_circle(SDL_Renderer* renderer, float x, float y, float r, int nPoints);
+void draw_circle_arr(SDL_Renderer* renderer, float x, float y, float r, int nPoints);
 
-
-struct Vec2d
+struct v2d
 {
     float x, y;
 };
 
+
 // Vector operations
-Vec2d add_v(Vec2d a, Vec2d b);
-Vec2d sub_v(Vec2d a, Vec2d b);
-Vec2d mul_s(float a, Vec2d b);
-float mag_sqr(Vec2d a);
-float dot(Vec2d a, Vec2d b);
+v2d add_v(v2d a, v2d b);
+v2d sub_v(v2d a, v2d b);
+v2d mul_s(float a, v2d b);
+float mag_sqr(v2d a);
+float dot(v2d a, v2d b);
 
 
 struct Environment
 {
-    Vec2d global_force;
-    float friction;
+    v2d global_force;
+    float friction; // Not physically accurate yet. Not used.
     float top, bot, left, right;
 };
-
 
 
 class PhysicsCircle
 {
 public:
-    PhysicsCircle(Vec2d init_p_vec, Vec2d init_v_vec, float radius, float bounciness, float mass, bool global, bool isStatic, Environment e, SDL_Color rgb);
+    PhysicsCircle(v2d init_p_vec, v2d init_v_vec, float radius, float bounciness, float mass, bool global, bool isStatic, Environment e, SDL_Color rgba);
     void update(float dt);
     void render(SDL_Renderer* renderer);
+    void render_point(SDL_Renderer* renderer);
 
-    SDL_Color m_col = { 0, 0, 0, 0 };
+    bool operator !=(PhysicsCircle c);
 
-    Environment m_env = { 0, 0, 0, 0, 0, 0 };
+    SDL_Color m_rgba;
 
-    float m_radius = 0;
-    float m_mass = 0;
-    float m_bounciness = 0;
+    Environment m_env;
 
-    Vec2d m_pos = { 0, 0 };
-    Vec2d m_vel = { 0, 0 };
-    Vec2d m_acc = { 0, 0 };
-    Vec2d m_force = { 0, 0 };
+    float m_radius;
+    float m_mass;
+    float m_bounciness;
 
+    v2d m_acc   = { 0.0f, 0.0f };
+    v2d m_pos   = { 0.0f, 0.0f };
+    v2d m_vel   = { 0.0f, 0.0f };
+    v2d m_force = { 0.0f, 0.0f };
+     
     bool m_global = true;
     bool m_isStatic = false;
 };
 
 
+class StaticEdge  // It's static, so no physics
+{
+public:
+    StaticEdge(v2d start, v2d end, SDL_Color rgba);
+    void render(SDL_Renderer* renderer);
+
+    v2d m_start;
+    v2d m_end;
+    SDL_Color m_rgba;
+};
 
 
 class CircleEngine
 {
 public:
-    CircleEngine(std::vector<PhysicsCircle*> circles);
+    CircleEngine(std::vector<PhysicsCircle*> circles, std::vector<StaticEdge*> edges);
     void phys_update(float dt);
     void render(SDL_Renderer* renderer);
 
     std::vector<PhysicsCircle*> m_circles;
+    std::vector<StaticEdge*> m_edges;
 
 private:
-    static bool _check_collide(PhysicsCircle c1, PhysicsCircle c2);
-    static void _resolve_static(PhysicsCircle* c1, PhysicsCircle* c2);
-    static void _resolve_dynamic_simple(PhysicsCircle* c1, PhysicsCircle* c2);
-    static void _resolve_dynamic_elastic(PhysicsCircle* c1, PhysicsCircle* c2);
+    static bool _cc_check_collide(PhysicsCircle c1, PhysicsCircle c2);
+    static void _cc_resolve_static(PhysicsCircle* c1, PhysicsCircle* c2);
+    static void _cc_resolve_dynamic_simple(PhysicsCircle* c1, PhysicsCircle* c2);
+    static void _cc_resolve_dynamic_elastic(PhysicsCircle* c1, PhysicsCircle* c2);
+    bool _ce_check_collide(PhysicsCircle* c, StaticEdge e);
 };
+
 
 
 #endif

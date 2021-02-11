@@ -1,154 +1,226 @@
 #include "circle_physics.h"
 
 
-void draw_circle(SDL_Renderer* renderer, float x, float y, float r, int nPoints)
+void draw_circle_arr(SDL_Renderer* renderer, float x, float y, float r, int nPoints)
+{
+    if (nPoints <= 2) return;
+
+    SDL_FPoint* pArr = (SDL_FPoint*)malloc((nPoints + 1) * sizeof(SDL_FPoint)); // +1 for the "end to start" connection 
+    int nIdx = 0;
+
+    if (pArr != NULL)
+    {
+        for (float theta = 0.0f; theta < 2.0f * (float)M_PI; theta += 2.0f * (float)M_PI / nPoints)
+        {
+            pArr[nIdx] = { r * cosf(theta) + x, r * sinf(theta) + y };
+            nIdx++;
+        }
+
+        pArr[nIdx] = { r * cosf(0.0f) + x, r * sinf(0.0f) + y }; // "end to start" connection 
+        SDL_RenderDrawLinesF(renderer, pArr, nPoints + 1); // +1 for the "end to start" connection 
+    }
+
+    else return;
+}
+
+/*
+Array version is faster
+
+void draw_circle_vec(SDL_Renderer* renderer, float x, float y, float r, int nPoints)
 {
     if (nPoints < 0) nPoints = 0;
 
     std::vector<SDL_FPoint> points;
 
-    for (float theta = 0; theta < 2 * (float) M_PI; theta += 2 * (float) M_PI / nPoints)
+    for (float theta = 0; theta < 2 * (float)M_PI; theta += 2 * (float)M_PI / nPoints)
     {
-        points.push_back({r * cosf(theta) + x, r * sinf(theta) + y });
+        points.push_back({ r * cosf(theta) + x, r * sinf(theta) + y });
     }
 
     points.push_back({ r * cosf(0) + x, r * sinf(0) + y }); // Connect last point to first
 
-    SDL_RenderDrawLinesF(renderer, &points[0], (int) points.size()); 
+    SDL_RenderDrawLinesF(renderer, &points[0], (int)points.size());
 }
+*/
 
-
-Vec2d add_v(Vec2d a, Vec2d b)
+v2d add_v(v2d a, v2d b)
 {
-    return Vec2d{ a.x + b.x, a.y + b.y };
+    return v2d{ a.x + b.x, a.y + b.y };
 }
 
 
-Vec2d sub_v(Vec2d a, Vec2d b)
+v2d sub_v(v2d a, v2d b)
 {
-    return Vec2d{ a.x - b.x, a.y - b.y };
+    return v2d{ a.x - b.x, a.y - b.y };
 }
 
 
-Vec2d mul_s(float a, Vec2d b)
+v2d mul_s(float a, v2d b)
 {
-    return Vec2d{ a * b.x, a * b.y };
+    return v2d{ a * b.x, a * b.y };
 }
 
-float mag_sqr(Vec2d a)
+
+float mag_sqr(v2d a)
 {
     return a.x * a.x + a.y * a.y;
 }
 
 
-float dot(Vec2d a, Vec2d b)
+float dot(v2d a, v2d b)
 {
     return a.x * b.x + a.y * b.y;
 }
 
 
-PhysicsCircle::PhysicsCircle(Vec2d init_p_vec, Vec2d init_v_vec, float radius, float bounciness, float mass, bool global, bool isStatic, Environment e, SDL_Color rgb)
+PhysicsCircle::PhysicsCircle(v2d init_p_vec, v2d init_v_vec, float radius, float bounciness, float mass, bool global, bool isStatic, Environment e, SDL_Color rgba)
 {
-    m_pos = init_p_vec;
-    m_vel = init_v_vec;
-    m_radius = radius;
-    m_bounciness = bounciness;
-    m_mass = mass;
-    m_global = global;
-    m_env = e;
-    m_col = rgb;
+    this->m_pos = init_p_vec;
+    this->m_vel = init_v_vec;
+    this->m_radius = radius;
+    this->m_bounciness = bounciness;
+    this->m_mass = mass;
+    this->m_global = global;
+    this->m_env = e;
+    this->m_rgba = rgba;
 
-    if (m_global)
+    if (this->m_global)
     {
-        m_force = m_env.global_force;
+        this->m_force = this->m_env.global_force;
     }
 
-    m_isStatic = isStatic;
+    this->m_isStatic = isStatic;
 }
 
 
 void PhysicsCircle::update(float dt)
-{
-    // --- Boundary collision ---
-    if (m_pos.x - m_radius <= m_env.left)
+{    
+    // Remove when StaticEdge has been implemented
+    if (this->m_pos.x - this->m_radius <= this->m_env.left)
     {
-        m_pos.x = m_env.left + m_radius;
-        m_vel.x *= -m_bounciness;
+        this->m_pos.x = this->m_env.left + this->m_radius;
+        this->m_vel.x *= -this->m_bounciness;
     }
-    else if (m_pos.x + m_radius >= m_env.right)
+    else if (this->m_pos.x + this->m_radius >= this->m_env.right)
     {
-        m_pos.x = m_env.right - m_radius;
-        m_vel.x *= -m_bounciness;
+        this->m_pos.x = this->m_env.right - this->m_radius;
+        this->m_vel.x *= -this->m_bounciness;
     }
-    if (m_pos.y - m_radius <= m_env.top)
+    if (this->m_pos.y - this->m_radius <= this->m_env.top)
     {
-        m_pos.y = m_env.top + m_radius;
-        m_vel.y *= -m_bounciness;
+        this->m_pos.y = this->m_env.top + this->m_radius;
+        this->m_vel.y *= -this->m_bounciness;
     }
-    else if (m_pos.y + m_radius >= m_env.bot)
+    else if (this->m_pos.y + this->m_radius >= this->m_env.bot)
     {
-        m_pos.y = m_env.bot - m_radius;
-        m_vel.y *= -m_bounciness;
+        this->m_pos.y = this->m_env.bot - this->m_radius;
+        this->m_vel.y *= -this->m_bounciness;
     }
-    
-    if (!m_isStatic)  // Simply don't adhere to the laws of physics
+
+    if (!this->m_isStatic)  // Simply don't adhere to the laws of physics
     {
         // Apply force
-        m_acc.x += m_force.x / m_mass * dt;
-        m_acc.y += m_force.y / m_mass * dt;
+        this->m_acc.x += this->m_force.x / this->m_mass * dt;
+        this->m_acc.y += this->m_force.y / this->m_mass * dt;
         
         // Accelerate
-        m_vel.x += m_acc.x * dt;
-        m_vel.y += m_acc.y * dt;
+        this->m_vel.x += this->m_acc.x * dt;
+        this->m_vel.y += this->m_acc.y * dt;
 
         // --- Move ---
-        m_pos.x += m_vel.x * dt;
-        m_pos.y += m_vel.y * dt;
+        this->m_pos.x += this->m_vel.x * dt;
+        this->m_pos.y += this->m_vel.y * dt;
     }
-    
 }
 
 
 void PhysicsCircle::render(SDL_Renderer* renderer)
 {
-    SDL_SetRenderDrawColor(renderer, m_col.r, m_col.g, m_col.b, m_col.a);
-    draw_circle(renderer, m_pos.x, m_pos.y, m_radius, CIRCLE_RESOLUTION);
+    SDL_SetRenderDrawColor(renderer, this->m_rgba.r, this->m_rgba.g, this->m_rgba.b, this->m_rgba.a);
+    draw_circle_arr(renderer, this->m_pos.x, this->m_pos.y, this->m_radius, CIRCLE_RESOLUTION);
 }
 
 
-CircleEngine::CircleEngine(std::vector<PhysicsCircle*> circles)
+void PhysicsCircle::render_point(SDL_Renderer* renderer)
 {
-    m_circles = circles;
+    SDL_SetRenderDrawColor(renderer, this->m_rgba.r, this->m_rgba.g, this->m_rgba.b, this->m_rgba.a);
+    SDL_RenderDrawPointF(renderer, this->m_pos.x, this->m_pos.y);
 }
 
 
-bool CircleEngine::_check_collide(PhysicsCircle c1, PhysicsCircle c2)
+bool PhysicsCircle::operator!=(PhysicsCircle c)
 {
-    return (sqrtf((c2.m_pos.x - c1.m_pos.x) * (c2.m_pos.x - c1.m_pos.x) + (c2.m_pos.y - c1.m_pos.y) * (c2.m_pos.y - c1.m_pos.y)) < c1.m_radius + c2.m_radius);
+    return this->m_pos.x != c.m_pos.x || this->m_pos.y != c.m_pos.y;
 }
 
 
-void CircleEngine::_resolve_static(PhysicsCircle* c1, PhysicsCircle* c2)
+StaticEdge::StaticEdge(v2d start, v2d end, SDL_Color rgba)
+{
+    this->m_start = start;
+    this->m_end = end;
+    this->m_rgba = rgba;
+}
+
+
+void StaticEdge::render(SDL_Renderer* renderer)
+{
+    SDL_SetRenderDrawColor(renderer, this->m_rgba.r, this->m_rgba.g, this->m_rgba.b, this->m_rgba.a);
+    SDL_RenderDrawLineF(renderer, this->m_start.x, this->m_start.y, this->m_end.x, this->m_end.y);
+}
+
+
+
+CircleEngine::CircleEngine(std::vector<PhysicsCircle*> circles, std::vector<StaticEdge*> edges)
+{
+    this->m_circles = circles;
+    this->m_edges = edges;
+}
+
+
+bool CircleEngine::_cc_check_collide(PhysicsCircle c1, PhysicsCircle c2)
+{
+    return (sqrtf((c2.m_pos.x - c1.m_pos.x) * (c2.m_pos.x - c1.m_pos.x) + (c2.m_pos.y - c1.m_pos.y) * (c2.m_pos.y - c1.m_pos.y)) <= c1.m_radius + c2.m_radius);
+}
+
+
+void CircleEngine::_cc_resolve_static(PhysicsCircle* c1, PhysicsCircle* c2)
 {
     float fDist = sqrtf((c2->m_pos.x - c1->m_pos.x) * (c2->m_pos.x - c1->m_pos.x) + (c2->m_pos.y - c1->m_pos.y) * (c2->m_pos.y - c1->m_pos.y));
     float fOverlap = 0.5f * (fDist - c1->m_radius - c2->m_radius);
    
-    if (!c1->m_isStatic)
+    float fRadSum = c1->m_radius + c2->m_radius; // The maximum distance circles should be displaced.
+
+    float xDisplace = fOverlap * (c1->m_pos.x - c2->m_pos.x) / fDist;
+    float yDisplace = fOverlap * (c1->m_pos.y - c2->m_pos.y) / fDist;
+
+    
+    if (fabs(xDisplace) > fRadSum)
     {
-        c1->m_pos.x -= fOverlap * (c1->m_pos.x - c2->m_pos.x) / fDist;
-        c1->m_pos.y -= fOverlap * (c1->m_pos.y - c2->m_pos.y) / fDist;
+        xDisplace = fOverlap * (c1->m_pos.x - c2->m_pos.x) / fRadSum;
     }
 
-    if (!c2->m_isStatic)
+    if (fabs(yDisplace) > fRadSum)
     {
-        c2->m_pos.x += fOverlap * (c1->m_pos.x - c2->m_pos.x) / fDist;
-        c2->m_pos.y += fOverlap * (c1->m_pos.y - c2->m_pos.y) / fDist;
+        yDisplace = fOverlap * (c1->m_pos.y - c2->m_pos.y) / fRadSum;
+    }
+    
+
+    if (!c1->m_isStatic)
+    {
+        c1->m_pos.x -= xDisplace;
+        c1->m_pos.y -= yDisplace;
+    }                           
+                                
+    if (!c2->m_isStatic)        
+    {                           
+        c2->m_pos.x += xDisplace;
+        c2->m_pos.y += yDisplace;
     }
    
 }
 
 
-void CircleEngine::_resolve_dynamic_simple(PhysicsCircle* c1, PhysicsCircle* c2)
+void CircleEngine::_cc_resolve_dynamic_simple(PhysicsCircle* c1, PhysicsCircle* c2)
 {
     float tempVel;
     tempVel = c1->m_vel.x;
@@ -161,15 +233,14 @@ void CircleEngine::_resolve_dynamic_simple(PhysicsCircle* c1, PhysicsCircle* c2)
 }
  
 
-
-void CircleEngine::_resolve_dynamic_elastic(PhysicsCircle* c1, PhysicsCircle* c2)
+void CircleEngine::_cc_resolve_dynamic_elastic(PhysicsCircle* c1, PhysicsCircle* c2)
 {
     // https://en.wikipedia.org/wiki/Elastic_collision
     // Angle-free representation
 
-    Vec2d c1VelUnchanged = c1->m_vel; // This bug took me like 2 days to find
+    v2d c1VelUnchanged = c1->m_vel;
 
-    Vec2d diff_factor = sub_v(c1->m_pos, c2->m_pos);
+    v2d diff_factor = sub_v(c1->m_pos, c2->m_pos);
     float mass_factor = 2.0f * c2->m_mass / (c1->m_mass + c2->m_mass);
     float scalar_factor =  dot(sub_v(c1->m_vel, c2->m_vel), sub_v(c1->m_pos, c2->m_pos)) / mag_sqr(sub_v(c1->m_pos, c2->m_pos));
     
@@ -183,35 +254,87 @@ void CircleEngine::_resolve_dynamic_elastic(PhysicsCircle* c1, PhysicsCircle* c2
 }                              
 
 
+bool CircleEngine::_ce_check_collide(PhysicsCircle* c, StaticEdge e)
+{
+    /*
+    Naive version -> Uses analytical geometry
+    */
+    
+
+    // Line
+    float m = (e.m_start.y - e.m_end.y) / (e.m_start.x - e.m_end.x);
+    float b = e.m_start.y - m * e.m_start.x;
+
+    // Circle
+    float p = c->m_pos.x;
+    float q = c->m_pos.y;
+    float r = c->m_radius;
+
+    // Quadratic
+    float A = m * m + 1.0f;
+    float B = -2.0f * (p - b * m + m * q);
+    float C = p * p - 2.0f * b * q + b * b + q * q - r * r;
+
+    float D = B * B - 4.0f * A * C;
+
+    if (D >= 0.0f)
+    {
+        if (p - r <= MAX(e.m_start.x, e.m_end.x) && p + r >= MIN(e.m_start.x, e.m_end.x)) // Check domain of collision
+        {
+            float xSol1 = (-B + sqrtf(B * B - 4.0f * A * C)) / (2.0f * A);
+            float ySol1 = m * xSol1 + b;
+            float xSol2 = (-B - sqrtf(B * B - 4.0f * A * C)) / (2.0f * A);
+            float ySol2 = m * xSol1 + b;
+            std::cout << "Collide" << std::endl;
+
+            c->m_vel.y *= -1.0f;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
 
 void CircleEngine::phys_update(float dt)
 {
-    std::vector<std::pair<PhysicsCircle*, PhysicsCircle*>> collidingPairs;
-    for (int i = 0; i < m_circles.size(); i++)
+    // Circle circle 
+    std::vector<std::pair<PhysicsCircle*, PhysicsCircle*>> ccCollidingPairs;
+    for (int i = 0; i < this->m_circles.size(); i++)
     {
-        for (int j = 0; j < m_circles.size(); j++)
+        for (int j = 0; j < this->m_circles.size(); j++)
         {
             if (i != j)
             {
-                if (this->_check_collide(*m_circles[i], *m_circles[j]))
+                if (this->_cc_check_collide(*this->m_circles[i], *this->m_circles[j]))
                 {
-                    this->_resolve_static(m_circles[i], m_circles[j]);
-                    collidingPairs.push_back({ m_circles[i], m_circles[j] });
+                    this->_cc_resolve_static(this->m_circles[i], this->m_circles[j]);
+                    ccCollidingPairs.push_back({ this->m_circles[i], this->m_circles[j] });
                 }
             }
         }
     }
 
-    for (auto p : collidingPairs)
+    for (int i = 0; i < this->m_circles.size(); i++)
     {
-        this->_resolve_dynamic_elastic(p.second, p.first);
+        for (int j = 0; j < this->m_edges.size(); j++)
+        {
+            this->_ce_check_collide(this->m_circles[i], *this->m_edges[j]);
+        }
+    }
+
+   
+
+    for (auto p : ccCollidingPairs)
+    {
+        this->_cc_resolve_dynamic_elastic(p.first, p.second);
     }
 
     for (auto c : this->m_circles)
     {
         c->update(dt);
     }
-
 }
 
 
@@ -221,4 +344,12 @@ void CircleEngine::render(SDL_Renderer* renderer)
     {
         c->render(renderer);
     }
+
+    for (auto e : this->m_edges)
+    {
+        e->render(renderer);
+    }
 }
+
+
+
