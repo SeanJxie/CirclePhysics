@@ -1,23 +1,87 @@
 #include "circle_physics.h"
 
 
+
+
+void _draw_line_bresenham(SDL_Renderer* h, int sx, int sy, int ex, int ey)
+{
+    /*
+    SDL_RenderSetLogicalSize seems to not scale SDL_RenderDrawLine.
+    Here's a custom line function.
+    */
+    // bresenham line
+    int x1 = sx, y1 = sy, x2 = ex, y2 = ey;
+    int steep = abs(y2 - y1) > abs(x2 - x1), inc = -1;
+
+    if (steep) {
+        std::swap(x1, y1);
+        std::swap(x2, y2);
+    }
+
+    if (x1 > x2) {
+        std::swap(x1, x2);
+        std::swap(y1, y2);
+    }
+
+    if (y1 < y2) {
+        inc = 1;
+    }
+
+    int dx = abs(x2 - x1),
+        dy = abs(y2 - y1),
+        y = y1, x = x1,
+        e = 0;
+
+    for (x; x <= x2; x++) {
+        if (steep) {
+            SDL_RenderDrawPoint(h, y, x);
+        }
+        else {
+            SDL_RenderDrawPoint(h, x, y);
+        }
+
+        if ((e + dy) << 1 < dx) {
+            e = e + dy;
+        }
+        else {
+            y += inc;
+            e = e + dy - dx;
+        }
+    }
+}
+
+
+void _draw_lines_bresenham(SDL_Renderer* h, SDL_FPoint* points, int nPoints)
+{
+    
+    for (int i = 0; i < nPoints - 1; i++)
+    {
+        _draw_line_bresenham(h, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);
+    }
+}
+
+
+
+
 void draw_circle_arr(SDL_Renderer* renderer, float x, float y, float r, int nPoints)
 {
     if (nPoints <= 2) return;
 
-    SDL_FPoint* pArr = (SDL_FPoint*)malloc((nPoints + 1) * sizeof(SDL_FPoint)); // +1 for the "end to start" connection 
+    SDL_FPoint* pArr = (SDL_FPoint*)malloc((nPoints + 1ull) * sizeof(SDL_FPoint)); // +1 for the "end to start" connection 
     int nIdx = 0;
+
+    const float F_DOUBLEPI = 2.0f * (float)M_PI;
 
     if (pArr != NULL)
     {
-        for (float theta = 0.0f; theta < 2.0f * (float)M_PI; theta += 2.0f * (float)M_PI / nPoints)
+        for (float theta = 0.0f; theta < F_DOUBLEPI; theta += F_DOUBLEPI / nPoints)
         {
             pArr[nIdx] = { r * cosf(theta) + x, r * sinf(theta) + y };
             nIdx++;
         }
 
         pArr[nIdx] = { r * cosf(0.0f) + x, r * sinf(0.0f) + y }; // "end to start" connection 
-        SDL_RenderDrawLinesF(renderer, pArr, nPoints + 1); // +1 for the "end to start" connection 
+        _draw_lines_bresenham(renderer, pArr, nPoints + 1); // +1 for the "end to start" connection 
     }
 
     else return;
@@ -285,8 +349,6 @@ bool CircleEngine::_ce_check_collide(PhysicsCircle* c, StaticEdge e)
             float ySol1 = m * xSol1 + b;
             float xSol2 = (-B - sqrtf(B * B - 4.0f * A * C)) / (2.0f * A);
             float ySol2 = m * xSol1 + b;
-            std::cout << "Collide" << std::endl;
-
             c->m_vel.y *= -1.0f;
             return true;
         }

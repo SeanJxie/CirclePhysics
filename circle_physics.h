@@ -19,6 +19,8 @@ const int CIRCLE_RESOLUTION = 10;
 const float MIN_VELOCITY = 0.0f; // Uh... I'll use this soon
 
 
+void _draw_line_bresenham(SDL_Renderer* h, int sx, int sy, int ex, int ey);
+void _draw_lines_bresenham(SDL_Renderer* h, SDL_FPoint* points, int nPoints);
 void draw_circle_arr(SDL_Renderer* renderer, float x, float y, float r, int nPoints);
 
 struct v2d

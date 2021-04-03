@@ -10,7 +10,8 @@ const char* WINTT = "Circles";
 
 int main(int argc, char* argv[])
 {
-    int inputWinWt = 3840, inputWinHt = 2160;
+    const int inputWinWt = 1000, inputWinHt = 1000;
+    const int logicalWt = 100, logicalHt = 100;
     /*
     std::cout << "Enter resolution:" << std::endl << "Width: ";
     std::cin >> inputWinWt;
@@ -28,7 +29,7 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    SDL_Window* hWin = SDL_CreateWindow(WINTT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, inputWinWt / 2, inputWinHt / 2, SDL_WINDOW_SHOWN);
+    SDL_Window* hWin = SDL_CreateWindow(WINTT, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, inputWinWt, inputWinHt, SDL_WINDOW_SHOWN);
     if (hWin == NULL)
     {
         std::cout << "Window error: " << SDL_GetError() << std::endl;
@@ -47,22 +48,17 @@ int main(int argc, char* argv[])
     }
 
 
-    int WINWT;
-    int WINHT;
 
-    //SDL_RenderSetLogicalSize(hRend, 100, 100);
-    SDL_GetRendererOutputSize(hRend, &WINWT, &WINHT);
-
-    std::cout << "Resolution: (" << WINWT << ", " << WINHT << ')' << std::endl;
+    SDL_RenderSetLogicalSize(hRend, logicalWt, logicalHt);
 
     SDL_Event event;
     bool quit = false;
 
     Environment main_env;
-    main_env.bot = (float)WINHT;
+    main_env.bot = (float)logicalWt;
     main_env.top = 0.0f;
     main_env.left = 0.0f;
-    main_env.right = (float)WINWT;
+    main_env.right = (float)logicalHt;
     main_env.global_force = { 0.0f, 0.0f };
 
     SDL_Color circleCol = { 255, 255, 255 };
@@ -71,8 +67,8 @@ int main(int argc, char* argv[])
     std::vector<PhysicsCircle*> circleVec;
     std::vector<StaticEdge*> edgeVec;
 
-    circleVec.push_back(new PhysicsCircle( {0, 0}, {0, 0}, 100.0f, 0, 1, false, false, main_env, SDL_Color {255, 0, 0} ));
-    edgeVec.push_back(new StaticEdge({ 500, 500 }, { 1000, 600 }, SDL_Color{ 255, 255, 255 }));
+    circleVec.push_back(new PhysicsCircle( {0, 0}, {0, 0}, 5.0f, 1, 1, false, false, main_env, SDL_Color {255, 0, 0} ));
+    //edgeVec.push_back(new StaticEdge({ 500, 500 }, { 1000, 600 }, SDL_Color{ 255, 255, 255 }));
 
     CircleEngine engine(circleVec, edgeVec);
 
@@ -88,6 +84,7 @@ int main(int argc, char* argv[])
     while (!quit)
     {
         SDL_GetMouseState(&mouseX, &mouseY);
+        mouseX /= (inputWinWt / logicalWt); mouseY /= (inputWinHt / logicalHt);
 
         while (SDL_PollEvent(&event))
         {
@@ -108,15 +105,19 @@ int main(int argc, char* argv[])
                 case SDLK_SPACE:
                     runSim = !runSim;
                     break;
+
+                case SDLK_r:
+                    engine.m_circles.clear();
+                    engine.m_circles.push_back(new PhysicsCircle({ 0, 0 }, { 0, 0 }, 5.0f, 1, 1, false, false, main_env, SDL_Color{ 255, 0, 0 }));
                 }
+            
                 break;
             
             case SDL_MOUSEBUTTONDOWN:    
-                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.1f, 1.0f, true, false, main_env, SDL_Color{ 0, 255, 0 }));
-                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 2 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.1f, 1.0f, true, false, main_env, SDL_Color{ 0, 255, 0 }));
-                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 4 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.1f, 1.0f, true, false, main_env, SDL_Color{ 0, 255, 0 }));
-                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 6 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.1f, 1.0f, true, false, main_env, SDL_Color{ 0, 255, 0 }));
-                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 8 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.1f, 1.0f, true, false, main_env, SDL_Color{ 0, 255, 0 }));
+                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 2 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.5f, 1.0f, true, false, main_env, SDL_Color{ (Uint8)rand(), (Uint8)rand(), (Uint8)rand() }));
+                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 4 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.5f, 1.0f, true, false, main_env, SDL_Color{ (Uint8)rand(), (Uint8)rand(), (Uint8)rand() }));
+                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 6 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.5f, 1.0f, true, false, main_env, SDL_Color{ (Uint8)rand(), (Uint8)rand(), (Uint8)rand() }));
+                engine.m_circles.push_back(new PhysicsCircle({ (float)mouseX + 8 * circleRad, (float)mouseY }, { 0.0f, 0.0f }, circleRad, 0.5f, 1.0f, true, false, main_env, SDL_Color{ (Uint8)rand(), (Uint8)rand(), (Uint8)rand() }));
 
             }
             
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
         startTime = endTime;
       
         
-        SDL_SetWindowTitle(hWin, (std::string("# Circles: ") + std::to_string(engine.m_circles.size()) + std::string(" FPS: ") + std::to_string((int)roundf(1 / deltaTime))).c_str());
+        //SDL_SetWindowTitle(hWin, (std::string("# Circles: ") + std::to_string(engine.m_circles.size()) + std::string(" FPS: ") + std::to_string((int)roundf(1 / deltaTime))).c_str());
     }
 
     SDL_DestroyRenderer(hRend);
